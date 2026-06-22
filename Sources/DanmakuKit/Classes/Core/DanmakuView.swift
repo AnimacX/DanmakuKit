@@ -226,6 +226,8 @@ public class DanmakuView: PlatformView {
         }
     }
     
+    private var danmakuClock: DanmakuClock = .init()
+    
     private var danmakuPool: [String: [DanmakuCell]] = [:]
     
     private var floatingTracks: [DanmakuTrack] = []
@@ -448,6 +450,13 @@ public extension DanmakuView {
         recalculateBottomTracks()
     }
     
+    func setTimeOffset(_ offset: Double) {
+        self.danmakuClock.offset = offset
+    }
+    
+    func currentTime() -> Double {
+        self.danmakuClock.currentTime
+    }
     
     func play() {
         guard status != .play else { return }
@@ -602,7 +611,7 @@ private extension DanmakuView {
         let diffFloatingTrackCount = trackCount - floatingTracks.count
         if diffFloatingTrackCount > 0 {
             for _ in 0..<diffFloatingTrackCount {
-                floatingTracks.append(DanmakuFloatingTrack(view: self))
+                floatingTracks.append(DanmakuFloatingTrack(view: self, clock: self.danmakuClock))
             }
         } else if diffFloatingTrackCount < 0 {
             for i in max(0, floatingTracks.count + diffFloatingTrackCount)..<floatingTracks.count {
@@ -628,7 +637,7 @@ private extension DanmakuView {
         let diffFloatingTrackCount = trackCount - topTracks.count
         if diffFloatingTrackCount > 0 {
             for _ in 0..<diffFloatingTrackCount {
-                topTracks.append(DanmakuVerticalTrack(view: self))
+                topTracks.append(DanmakuVerticalTrack(view: self, clock: self.danmakuClock))
             }
         } else if diffFloatingTrackCount < 0 {
             for i in max(0, topTracks.count + diffFloatingTrackCount)..<topTracks.count {
@@ -654,7 +663,7 @@ private extension DanmakuView {
         let diffFloatingTrackCount = trackCount - bottomTracks.count
         if diffFloatingTrackCount > 0 {
             for _ in 0..<diffFloatingTrackCount {
-                bottomTracks.insert(DanmakuVerticalTrack(view: self), at: 0)
+                bottomTracks.insert(DanmakuVerticalTrack(view: self, clock: self.danmakuClock), at: 0)
             }
         } else if diffFloatingTrackCount < 0 {
             for i in 0..<min(bottomTracks.count, abs(diffFloatingTrackCount)) {

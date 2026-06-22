@@ -30,7 +30,7 @@ protocol DanmakuTrack {
     
     var playingSpeed: Float { get set }
     
-    init(view: PlatformView)
+    init(view: PlatformView, clock: DanmakuClock)
     
     func shoot(danmaku: DanmakuCell)
     
@@ -92,8 +92,11 @@ class DanmakuFloatingTrack: NSObject, DanmakuTrack, CAAnimationDelegate {
     
     private weak var view: PlatformView?
     
-    required init(view: PlatformView) {
+    private let clock: DanmakuClock
+    
+    required init(view: PlatformView, clock: DanmakuClock) {
         self.view = view
+        self.clock = clock
     }
     
     func shoot(danmaku: DanmakuCell) {
@@ -159,7 +162,7 @@ class DanmakuFloatingTrack: NSObject, DanmakuTrack, CAAnimationDelegate {
             let pausedTime = layer.timeOffset
             layer.speed = 1.0
             layer.timeOffset = 0.0
-            layer.beginTime = CACurrentMediaTime() - pausedTime
+            layer.beginTime = clock.currentTime - pausedTime
         }
         #else
         addAnimation(to: findCell)
@@ -187,7 +190,7 @@ class DanmakuFloatingTrack: NSObject, DanmakuTrack, CAAnimationDelegate {
         findCell.frame.origin = CGPoint(x: rf.midX - findCell.bounds.width / 2.0, y: rf.midY - findCell.bounds.height / 2.0)
         #if os(macOS)
         if let layer = findCell.layer {
-            let pausedTime = layer.convertTime(CACurrentMediaTime(), from: nil)
+            let pausedTime = layer.convertTime(clock.currentTime, from: nil)
             layer.speed = 0.0
             layer.timeOffset = pausedTime
         }
@@ -277,7 +280,7 @@ class DanmakuFloatingTrack: NSObject, DanmakuTrack, CAAnimationDelegate {
         danmaku.animationBeginTime = CFAbsoluteTimeGetCurrent()
         let rate = max(danmaku.frame.maxX / (view!.bounds.width + danmaku.frame.width), 0)
         let animation = CABasicAnimation(keyPath: "position.x")
-        animation.beginTime = CACurrentMediaTime()
+        animation.beginTime = clock.currentTime
         animation.duration = (cellModel.displayTime * Double(rate)) / Double(playingSpeed)
         animation.delegate = self
         #if os(macOS)
@@ -333,8 +336,11 @@ class DanmakuVerticalTrack: NSObject, DanmakuTrack, CAAnimationDelegate {
     
     private weak var view: PlatformView?
     
-    required init(view: PlatformView) {
+    private let clock: DanmakuClock
+    
+    required init(view: PlatformView, clock: DanmakuClock) {
         self.view = view
+        self.clock = clock
     }
     
     func shoot(danmaku: DanmakuCell) {
@@ -371,7 +377,7 @@ class DanmakuVerticalTrack: NSObject, DanmakuTrack, CAAnimationDelegate {
             let pausedTime = layer.timeOffset
             layer.speed = 1.0
             layer.timeOffset = 0.0
-            layer.beginTime = CACurrentMediaTime() - pausedTime
+            layer.beginTime = clock.currentTime - pausedTime
         }
         #else
         addAnimation(to: findCell)
@@ -395,7 +401,7 @@ class DanmakuVerticalTrack: NSObject, DanmakuTrack, CAAnimationDelegate {
         }) else { return false }
         #if os(macOS)
         if let layer = findCell.layer {
-            let pausedTime = layer.convertTime(CACurrentMediaTime(), from: nil)
+            let pausedTime = layer.convertTime(clock.currentTime, from: nil)
             layer.speed = 0.0
             layer.timeOffset = pausedTime
         }
@@ -486,7 +492,7 @@ class DanmakuVerticalTrack: NSObject, DanmakuTrack, CAAnimationDelegate {
         }
         #endif
         let animation = CABasicAnimation(keyPath: "opacity")
-        animation.beginTime = CACurrentMediaTime() + cellModel.displayTime * rate / Double(playingSpeed)
+        animation.beginTime = clock.currentTime + cellModel.displayTime * rate / Double(playingSpeed)
         animation.duration = 0
         animation.delegate = self
         animation.fromValue = 1

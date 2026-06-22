@@ -103,6 +103,8 @@ public struct DanmakuViewAdapter: PlatformViewRepresentable {
             }
         }
         
+        public func setTimeOffset(_ v: Double) { danmakuView?.setTimeOffset(v) }
+        public func currentTime() -> Double { danmakuView?.currentTime() ?? 0 }
         public func play() { danmakuView?.play() }
         public func pause() { danmakuView?.pause() }
         public func stop() { danmakuView?.stop() }
