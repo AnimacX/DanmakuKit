@@ -32,14 +32,16 @@ public struct DanmakuViewAdapter: PlatformViewRepresentable {
     
 #if canImport(UIKit)
     public typealias UIViewType = DanmakuView
+    private let controller: AnyObject?
+    private let body: PlatformView
 #elseif os(macOS)
     public typealias NSViewType = DanmakuView
+    private let body: () -> View
 #endif
     
     @ObservedObject var coordinator: Coordinator
     
-    private let controller: AnyObject?
-    private let body: PlatformView
+
     
     public init(coordinator: Coordinator, body: @escaping () -> some View = EmptyView.init) {
         self.coordinator = coordinator
@@ -48,8 +50,7 @@ public struct DanmakuViewAdapter: PlatformViewRepresentable {
         self.body = controller.view
         self.controller = controller
 #else
-        self.controller = nil
-        self.body = NSHostingView(rootView: body())
+        self.body = body
 #endif
     }
     
@@ -71,13 +72,14 @@ public struct DanmakuViewAdapter: PlatformViewRepresentable {
 #elseif os(macOS)
     public func makeNSView(context: Context) -> NSViewType {
         let view = coordinator.makeView()
-        body.translatesAutoresizingMaskIntoConstraints = false
-        view.addSubview(body)
+        let sub = NSHostingView(rootView: AnyView(body()))
+        sub.translatesAutoresizingMaskIntoConstraints = false
+        view.addSubview(sub)
         NSLayoutConstraint.activate([
-            body.topAnchor.constraint(equalTo: view.topAnchor),
-            body.bottomAnchor.constraint(equalTo: view.bottomAnchor),
-            body.leadingAnchor.constraint(equalTo: view.leadingAnchor),
-            body.trailingAnchor.constraint(equalTo: view.trailingAnchor),
+            sub.topAnchor.constraint(equalTo: view.topAnchor),
+            sub.bottomAnchor.constraint(equalTo: view.bottomAnchor),
+            sub.leadingAnchor.constraint(equalTo: view.leadingAnchor),
+            sub.trailingAnchor.constraint(equalTo: view.trailingAnchor),
         ])
         return view
     }
