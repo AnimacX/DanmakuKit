@@ -140,6 +140,21 @@ public class DanmakuView: PlatformView {
         }
     }
     
+    public var opacity: CGFloat = 1 {
+        didSet {
+            guard oldValue != opacity else { return }
+            for i in 0..<floatingTracks.count {
+                floatingTracks[i].opacity = Float(opacity)
+            }
+            for i in 0..<topTracks.count {
+                topTracks[i].opacity = Float(opacity)
+            }
+            for i in 0..<bottomTracks.count {
+                bottomTracks[i].opacity = Float(opacity)
+            }
+        }
+    }
+    
     /// State of play,  The danmaku can only be sent in play status.
     public private(set) var status: DanmakuStatus = .stop
     
@@ -628,6 +643,7 @@ private extension DanmakuView {
             track.index = UInt(i)
             track.playingSpeed = playingSpeed
             track.positionY = CGFloat(i) * trackHeight + trackHeight / 2.0 + paddingTop + offsetY
+            track.opacity = Float(opacity)
         }
     }
     
@@ -654,6 +670,7 @@ private extension DanmakuView {
             track.index = UInt(i)
             track.playingSpeed = playingSpeed
             track.positionY = CGFloat(i) * trackHeight + trackHeight / 2.0 + paddingTop + offsetY
+            track.opacity = Float(opacity)
         }
     }
     
@@ -685,6 +702,7 @@ private extension DanmakuView {
 #else
             track.positionY = bounds.height - CGFloat(index) * trackHeight - trackHeight / 2.0 - paddingTop - offsetY
 #endif
+            track.opacity = Float(opacity)
         }
     }
     
@@ -783,6 +801,8 @@ private extension DanmakuView {
             cell?.model = danmaku
             delegate?.danmakuView(self, dequeueReusable: cell!)
         }
+        
+        cell?.layerOpacity = Float(opacity)
         return cell
     }
     

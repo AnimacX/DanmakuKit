@@ -29,6 +29,8 @@ protocol DanmakuTrack {
     var isOverlap: Bool { get set }
     
     var playingSpeed: Float { get set }
+
+    var opacity: Float { get set }
     
     init(view: PlatformView, clock: DanmakuClock)
     
@@ -87,6 +89,13 @@ class DanmakuFloatingTrack: NSObject, DanmakuTrack, CAAnimationDelegate {
     }
     
     var playingSpeed: Float = 1.0
+
+    var opacity: Float = 1.0 {
+        didSet {
+            guard oldValue != opacity else { return }
+            cells.forEach { $0.layerOpacity = opacity }
+        }
+    }
     
     private var cells: [DanmakuCell] = []
     
@@ -217,11 +226,7 @@ class DanmakuFloatingTrack: NSObject, DanmakuTrack, CAAnimationDelegate {
         let totalWidth = view!.frame.width + danmaku.bounds.width
         let syncFrame = CGRect(x: view!.frame.width - totalWidth * CGFloat(progress), y: positionY - danmaku.bounds.height / 2.0, width: danmaku.bounds.width, height: danmaku.bounds.height)
         cells.append(danmaku)
-        #if os(macOS)
-        danmaku.layer?.opacity = 1
-        #else
-        danmaku.layer.opacity = 1
-        #endif
+        danmaku.layerOpacity = opacity
         danmaku.frame = syncFrame
         danmaku.model?.track = index
         danmaku.animationTime = model.displayTime * Double(progress)
@@ -299,7 +304,12 @@ class DanmakuFloatingTrack: NSObject, DanmakuTrack, CAAnimationDelegate {
         danmaku.layer.add(animation, forKey: FLOATING_ANIMATION_KEY)
         #endif
     }
-    
+
+    func prepare(danmaku: DanmakuCell) {
+        danmaku.animationTime = 0
+        danmaku.animationBeginTime = 0
+        danmaku.layerOpacity = opacity
+    }
 }
 
 //MARK: DanmakuVerticalTrack
@@ -333,6 +343,12 @@ class DanmakuVerticalTrack: NSObject, DanmakuTrack, CAAnimationDelegate {
     var cells: [DanmakuCell] = []
     
     var playingSpeed: Float = 1.0
+
+    var opacity: Float = 1.0 {
+        didSet {
+            cells.forEach { $0.layerOpacity = opacity }
+        }
+    }
     
     private weak var view: PlatformView?
     
@@ -349,7 +365,6 @@ class DanmakuVerticalTrack: NSObject, DanmakuTrack, CAAnimationDelegate {
         let originX = (view!.bounds.width - danmaku.bounds.width) / 2.0
         let originY = positionY - danmaku.bounds.height / 2.0
         danmaku.frame = CGRect(x: originX, y: originY, width: danmaku.bounds.width, height: danmaku.bounds.height)
-        danmaku.layer?.opacity = 1
         #else
         danmaku.layer.position = CGPoint(x: view!.bounds.width / 2.0, y: positionY)
         #endif
@@ -432,11 +447,10 @@ class DanmakuVerticalTrack: NSObject, DanmakuTrack, CAAnimationDelegate {
         let originX = (view!.bounds.width - danmaku.bounds.width) / 2.0
         let originY = positionY - danmaku.bounds.height / 2.0
         danmaku.frame = CGRect(x: originX, y: originY, width: danmaku.bounds.width, height: danmaku.bounds.height)
-        danmaku.layer?.opacity = 1
         #else
         danmaku.layer.position = CGPoint(x: view!.bounds.width / 2.0, y: positionY)
-        danmaku.layer.opacity = 1
         #endif
+        danmaku.layerOpacity = opacity
     }
     
     func syncAndPlay(_ danmaku: DanmakuCell, at progress: Float) {
@@ -495,7 +509,7 @@ class DanmakuVerticalTrack: NSObject, DanmakuTrack, CAAnimationDelegate {
         animation.beginTime = clock.currentTime + cellModel.displayTime * rate / Double(playingSpeed)
         animation.duration = 0
         animation.delegate = self
-        animation.fromValue = 1
+        animation.fromValue = opacity
         animation.toValue = 0
         animation.isRemovedOnCompletion = false
         animation.fillMode = .forwards
@@ -506,15 +520,10 @@ class DanmakuVerticalTrack: NSObject, DanmakuTrack, CAAnimationDelegate {
         danmaku.layer.add(animation, forKey: TOP_ANIMATION_KEY)
         #endif
     }
-    
-}
 
-func prepare(danmaku: DanmakuCell) {
-    danmaku.animationTime = 0
-    danmaku.animationBeginTime = 0
-    #if os(macOS)
-    danmaku.layer?.opacity = 1
-    #else
-    danmaku.layer.opacity = 1
-    #endif
+    func prepare(danmaku: DanmakuCell) {
+        danmaku.animationTime = 0
+        danmaku.animationBeginTime = 0
+        danmaku.layerOpacity = opacity
+    }
 }

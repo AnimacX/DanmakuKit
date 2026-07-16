@@ -17,6 +17,16 @@ public typealias PlatformColor = NSColor
 public typealias PlatformPoint = NSPoint
 @available(macOS 10.15, *)
 public typealias PlatformViewRepresentable = NSViewRepresentable
+extension PlatformView {
+    var layerOpacity: Float {
+        get {
+            layer?.opacity ?? 0.0
+        }
+        set {
+            layer?.opacity = newValue
+        }
+    }
+}
 #else
 import UIKit
 import SwiftUI
@@ -26,4 +36,14 @@ public typealias PlatformColor = UIColor
 public typealias PlatformPoint = CGPoint
 @available(iOS 13.0, tvOS 13.0, *)
 public typealias PlatformViewRepresentable = UIViewRepresentable
+extension PlatformView {
+    var layerOpacity: Float {
+        get {
+            layer.opacity
+        }
+        set {
+            layer.opacity = newValue
+        }
+    }
+}
 #endif
