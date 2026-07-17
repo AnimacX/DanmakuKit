@@ -283,7 +283,12 @@ public class DanmakuView: PlatformView {
 #if os(macOS)
     // Use a top-left origin like iOS so tracks are laid out from the top.
     public override var isFlipped: Bool { true }
-    
+
+    // Accept first responder so that SwiftUI's focus system can use this
+    // view (the NSViewRepresentable's backing) as the first responder,
+    // enabling `.onKeyPress` modifiers on the parent DanmakuCanvasView.
+    public override var acceptsFirstResponder: Bool { true }
+
     public override func layout() {
         super.layout()
         recalculateTracks()
