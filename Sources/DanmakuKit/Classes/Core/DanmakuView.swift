@@ -614,10 +614,13 @@ public extension DanmakuView {
     /// E.g.This method will be used when you change the displayTime property in the cellModel.
     /// - Parameter closure: update closure
     func update(_ closure: () -> Void) {
+        let originState = status
         pause()
         closure()
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.01) {
-            self.play()
+        if originState == .play {
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.01) {
+                self.play()
+            }
         }
     }
     
