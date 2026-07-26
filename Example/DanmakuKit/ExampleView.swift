@@ -48,8 +48,8 @@ struct ExampleView: View {
         
         func onAppear() {
             requestDanmaku()
-            danmakuViewModel.danmakuView?.paddingTop = 20
-            danmakuViewModel.danmakuView?.paddingBottom = 20
+            danmakuViewModel.danmakuView?.paddingTop = .absolute(20)
+            danmakuViewModel.danmakuView?.paddingBottom = .absolute(20)
             playerViewModel.setupPlayer()
             playerViewModel.play()
             danmakuViewModel.danmakuViewDelegate = self
