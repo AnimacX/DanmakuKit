@@ -109,6 +109,11 @@ public enum DanmakuStatus {
     case stop
 }
 
+public enum DanmakuTrackPadding: Hashable {
+    case absolute(_ value: CGFloat)
+    case relative(_ rate: CGFloat)
+}
+
 public class DanmakuView: PlatformView {
     
     public weak var delegate: DanmakuViewDelegate?
@@ -125,18 +130,38 @@ public class DanmakuView: PlatformView {
     }
     
     /// Padding of top area, the actual offset of the top danmaku will refer to this property.
-    public var paddingTop: CGFloat = 0 {
+    /// effect on: floating, top, bottom
+    public var paddingTop: DanmakuTrackPadding = .absolute(0) {
         didSet {
             guard oldValue != paddingTop else { return }
             recalculateTracks()
         }
     }
     
+    public var paddingTopValue: CGFloat {
+        switch paddingTop {
+        case .absolute(let value):
+            return value
+        case .relative(let rate):
+            return bounds.height * rate
+        }
+    }
+    
     /// Padding of bottom area, the actual offset of the bottom danmaku will refer to this property.
-    public var paddingBottom: CGFloat = 0 {
+    /// effect on: top, bottom
+    public var paddingBottom: DanmakuTrackPadding = .absolute(0) {
         didSet {
             guard oldValue != paddingBottom else { return }
             recalculateTracks()
+        }
+    }
+    
+    public var paddingBottomValue: CGFloat {
+        switch paddingBottom {
+        case .absolute(let value):
+            return value
+        case .relative(let rate):
+            return bounds.height * rate
         }
     }
     
@@ -159,6 +184,7 @@ public class DanmakuView: PlatformView {
     public private(set) var status: DanmakuStatus = .stop
     
     /// The display area of the danmaku is set between 0 and 1. Setting this property will affect the number of danmaku tracks.
+    /// effect on: floating
     public var displayArea: CGFloat = 1.0 {
         willSet {
             assert(0 <= newValue && newValue <= 1, "Danmaku display area must be between [0, 1].")
@@ -629,8 +655,7 @@ public extension DanmakuView {
 private extension DanmakuView {
     
     func recalculateFloatingTracks() {
-        let trackCount = max(0, Int(floorf(Float((viewHeight - paddingTop - paddingBottom) / trackHeight))))
-        let offsetY = max(0, (viewHeight - CGFloat(trackCount) * trackHeight) / 2.0)
+        let trackCount = max(0, Int(floorf(Float((viewHeight - paddingTopValue) / trackHeight))))
         let diffFloatingTrackCount = trackCount - floatingTracks.count
         if diffFloatingTrackCount > 0 {
             for _ in 0..<diffFloatingTrackCount {
@@ -650,14 +675,13 @@ private extension DanmakuView {
             }
             track.index = UInt(i)
             track.playingSpeed = playingSpeed
-            track.positionY = CGFloat(i) * trackHeight + trackHeight / 2.0 + paddingTop + offsetY
+            track.positionY = CGFloat(i) * trackHeight + trackHeight / 2.0 + paddingTopValue
             track.opacity = Float(opacity)
         }
     }
     
     func recalculateTopTracks() {
-        let trackCount = max(0, Int(floorf(Float((viewHeight - paddingTop - paddingBottom) / trackHeight))))
-        let offsetY = max(0, (viewHeight - CGFloat(trackCount) * trackHeight) / 2.0)
+        let trackCount = max(0, Int(floorf(Float((bounds.height - paddingTopValue - paddingBottomValue) / trackHeight))))
         let diffFloatingTrackCount = trackCount - topTracks.count
         if diffFloatingTrackCount > 0 {
             for _ in 0..<diffFloatingTrackCount {
@@ -677,14 +701,13 @@ private extension DanmakuView {
             }
             track.index = UInt(i)
             track.playingSpeed = playingSpeed
-            track.positionY = CGFloat(i) * trackHeight + trackHeight / 2.0 + paddingTop + offsetY
+            track.positionY = CGFloat(i) * trackHeight + trackHeight / 2.0 + paddingTopValue
             track.opacity = Float(opacity)
         }
     }
     
     func recalculateBottomTracks() {
-        let trackCount = max(0, Int(floorf(Float((viewHeight - paddingTop - paddingBottom) / trackHeight))))
-        let offsetY = max(0, (viewHeight - CGFloat(trackCount) * trackHeight) / 2.0)
+        let trackCount = max(0, Int(floorf(Float((bounds.height - paddingTopValue - paddingBottomValue) / trackHeight))))
         let diffFloatingTrackCount = trackCount - bottomTracks.count
         if diffFloatingTrackCount > 0 {
             for _ in 0..<diffFloatingTrackCount {
@@ -705,11 +728,7 @@ private extension DanmakuView {
             let index = bottomTracks.count - i - 1
             track.index = UInt(index)
             track.playingSpeed = playingSpeed
-#if os(macOS)
-            track.positionY = bounds.height - CGFloat(index) * trackHeight - trackHeight / 2.0 - paddingBottom - offsetY
-#else
-            track.positionY = bounds.height - CGFloat(index) * trackHeight - trackHeight / 2.0 - paddingTop - offsetY
-#endif
+            track.positionY = bounds.height - CGFloat(index) * trackHeight - trackHeight / 2.0 - paddingBottomValue
             track.opacity = Float(opacity)
         }
     }

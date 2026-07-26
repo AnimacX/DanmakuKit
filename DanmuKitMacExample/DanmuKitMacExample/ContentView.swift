@@ -157,6 +157,28 @@ struct ContentView: View {
                         }
                 }
             }
+            
+            HStack {
+                Button("Full DisplayArea") {
+                    coordinator.danmakuView?.displayArea = 1.0
+                }
+                .buttonStyle(.bordered)
+                
+                Button("75% DisplayArea") {
+                    coordinator.danmakuView?.displayArea = 0.75
+                }
+                .buttonStyle(.bordered)
+                
+                Button("0% PaddingBottom") {
+                    coordinator.danmakuView?.paddingBottom = .absolute(0)
+                }
+                .buttonStyle(.bordered)
+                
+                Button("20% PaddingBottom") {
+                    coordinator.danmakuView?.paddingBottom = .relative(0.2)
+                }
+                .buttonStyle(.bordered)
+            }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .padding()
@@ -178,7 +200,8 @@ struct ContentView: View {
         let delegate = DanmakuDelegate()
         self.delegateRef = delegate
         coordinator.danmakuViewDelegate = delegate
-
+        coordinator.danmakuView?.paddingBottom = .relative(0.20)
+        coordinator.danmakuView?.displayArea = 0.75
         // Configure danmaku view settings
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
             coordinator.danmakuView?.enableCellReusable = true
