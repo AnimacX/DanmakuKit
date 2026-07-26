@@ -148,7 +148,7 @@ public class DanmakuView: PlatformView {
     }
     
     /// Padding of bottom area, the actual offset of the bottom danmaku will refer to this property.
-    /// effect on: top, bottom
+    /// effect on: floating, top, bottom
     public var paddingBottom: DanmakuTrackPadding = .absolute(0) {
         didSet {
             guard oldValue != paddingBottom else { return }
@@ -184,7 +184,7 @@ public class DanmakuView: PlatformView {
     public private(set) var status: DanmakuStatus = .stop
     
     /// The display area of the danmaku is set between 0 and 1. Setting this property will affect the number of danmaku tracks.
-    /// effect on: floating
+    /// effect on: floating, top, bottom
     public var displayArea: CGFloat = 1.0 {
         willSet {
             assert(0 <= newValue && newValue <= 1, "Danmaku display area must be between [0, 1].")
@@ -655,7 +655,7 @@ public extension DanmakuView {
 private extension DanmakuView {
     
     func recalculateFloatingTracks() {
-        let trackCount = max(0, Int(floorf(Float((viewHeight - paddingTopValue) / trackHeight))))
+        let trackCount = max(0, Int(floorf(Float((viewHeight - paddingTopValue - paddingBottomValue) / trackHeight))))
         let diffFloatingTrackCount = trackCount - floatingTracks.count
         if diffFloatingTrackCount > 0 {
             for _ in 0..<diffFloatingTrackCount {
@@ -681,7 +681,7 @@ private extension DanmakuView {
     }
     
     func recalculateTopTracks() {
-        let trackCount = max(0, Int(floorf(Float((bounds.height - paddingTopValue - paddingBottomValue) / trackHeight))))
+        let trackCount = max(0, Int(floorf(Float((viewHeight - paddingTopValue - paddingBottomValue) / trackHeight))))
         let diffFloatingTrackCount = trackCount - topTracks.count
         if diffFloatingTrackCount > 0 {
             for _ in 0..<diffFloatingTrackCount {
@@ -707,7 +707,7 @@ private extension DanmakuView {
     }
     
     func recalculateBottomTracks() {
-        let trackCount = max(0, Int(floorf(Float((bounds.height - paddingTopValue - paddingBottomValue) / trackHeight))))
+        let trackCount = max(0, Int(floorf(Float((viewHeight - paddingTopValue - paddingBottomValue) / trackHeight))))
         let diffFloatingTrackCount = trackCount - bottomTracks.count
         if diffFloatingTrackCount > 0 {
             for _ in 0..<diffFloatingTrackCount {
