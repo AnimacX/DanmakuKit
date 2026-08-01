@@ -294,11 +294,14 @@ public class DanmakuView: PlatformView {
 #if os(macOS)
         let containerClick = NSClickGestureRecognizer(target: self, action: #selector(containerDidClick(_:)))
         containerClick.delaysPrimaryMouseButtonEvents = false
+        containerClick.delegate = self
         self.addGestureRecognizer(containerClick)
 #else
         let bgTap = UITapGestureRecognizer(target: self, action: #selector(danmakuDidTap(_:)))
         bgTap.delaysTouchesBegan = false
         bgTap.delaysTouchesEnded = false
+        bgTap.cancelsTouchesInView = false
+        bgTap.delegate = self
         self.addGestureRecognizer(bgTap)
 #endif
     }
@@ -335,10 +338,6 @@ public class DanmakuView: PlatformView {
         guard !isHidden, alphaValue > 0 else { return nil }
         guard self.bounds.contains(point) else { return nil }
         for sub in subviews.reversed() {
-            // Adapter content (for example, a player view) is a sibling of
-            // danmaku cells. It must not become the hit-test target because
-            // taps on empty space are used to clear the toggled danmaku.
-            guard sub is DanmakuCell else { continue }
             var local = self.convert(point, to: sub)
             if let presentation = sub.layer?.presentation() {
                 local = self.layer?.convert(point, to: presentation) ?? local
@@ -404,11 +403,6 @@ public class DanmakuView: PlatformView {
         guard self.point(inside: point, with: event) else { return nil }
         for i in (0..<subviews.count).reversed() {
             let subView = subviews[i]
-            // `DanmakuViewAdapter` installs its body (such as a player) as a
-            // child view. Only danmaku cells participate in this view's hit
-            // testing so an empty tap can reach `danmakuDidTap(_:)` and clear
-            // the current toggle just as it does on macOS.
-            guard subView is DanmakuCell else { continue }
             var newPoint: CGPoint
             if subView.layer.animationKeys() != nil, let presentationLayer = subView.layer.presentation() {
                 newPoint = layer.convert(point, to: presentationLayer)
@@ -436,6 +430,26 @@ public class DanmakuView: PlatformView {
     }
     
 }
+
+#if os(macOS)
+extension DanmakuView: NSGestureRecognizerDelegate {
+    public func gestureRecognizer(
+        _ gestureRecognizer: NSGestureRecognizer,
+        shouldRecognizeSimultaneouslyWith otherGestureRecognizer: NSGestureRecognizer
+    ) -> Bool {
+        true
+    }
+}
+#elseif canImport(UIKit)
+extension DanmakuView: UIGestureRecognizerDelegate {
+    public func gestureRecognizer(
+        _ gestureRecognizer: UIGestureRecognizer,
+        shouldRecognizeSimultaneouslyWith otherGestureRecognizer: UIGestureRecognizer
+    ) -> Bool {
+        true
+    }
+}
+#endif
 
 public extension DanmakuView {
     
