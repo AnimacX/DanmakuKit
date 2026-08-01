@@ -34,6 +34,13 @@ struct ExampleView: View {
                         viewModel.onDisappear()
                     }
             }
+            .onTapGesture {
+                print("Adapter tapped")
+            }
+        }
+        .contentShape(Rectangle())
+        .onTapGesture {
+            print("Outer ZStack tapped")
         }
         .background(Color.black)
     }
