@@ -341,17 +341,29 @@ class DanmakuDelegate: DanmakuViewDelegate {
         print("Reusing danmaku cell")
     }
     
-    func danmakuView(_ danmakuView: DanmakuView, didHovered danmaku: DanmakuCell) {
+    func danmakuView(_ danmakuView: DanmakuView, didToggled danmaku: DanmakuCell) {
         if let model = danmaku.model {
             danmakuView.pause(model)
         }
     }
-
-    func danmakuView(_ danmakuView: DanmakuView, stopHovered danmaku: DanmakuCell) {
+    
+    func danmakuView(_ danmakuView: DanmakuView, stopToggled danmaku: DanmakuCell) {
         if let model = danmaku.model {
             danmakuView.play(model)
         }
     }
+    
+//    func danmakuView(_ danmakuView: DanmakuView, didHovered danmaku: DanmakuCell) {
+//        if let model = danmaku.model {
+//            danmakuView.pause(model)
+//        }
+//    }
+//
+//    func danmakuView(_ danmakuView: DanmakuView, stopHovered danmaku: DanmakuCell) {
+//        if let model = danmaku.model {
+//            danmakuView.play(model)
+//        }
+//    }
 }
 
 // MARK: - DanmakuCellType Extension
