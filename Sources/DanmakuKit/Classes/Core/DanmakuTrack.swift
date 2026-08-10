@@ -34,7 +34,7 @@ protocol DanmakuTrack {
     
     init(view: PlatformView, clock: DanmakuClock)
     
-    func shoot(danmaku: DanmakuCell)
+    func shoot(danmaku: DanmakuCell, playImmediately: Bool)
     
     func canShoot(danmaku: DanmakuCellModel) -> Bool
     
@@ -108,7 +108,7 @@ class DanmakuFloatingTrack: NSObject, DanmakuTrack, CAAnimationDelegate {
         self.clock = clock
     }
     
-    func shoot(danmaku: DanmakuCell) {
+    func shoot(danmaku: DanmakuCell, playImmediately: Bool) {
         cells.append(danmaku)
         #if os(macOS)
         danmaku.frame = CGRect(x: view!.bounds.width, y: positionY - danmaku.bounds.height / 2.0, width: danmaku.bounds.width, height: danmaku.bounds.height)
@@ -117,7 +117,9 @@ class DanmakuFloatingTrack: NSObject, DanmakuTrack, CAAnimationDelegate {
         #endif
         danmaku.model?.track = index
         prepare(danmaku: danmaku)
-        addAnimation(to: danmaku)
+        if playImmediately {
+            addAnimation(to: danmaku)
+        }
         danmaku.enterTrack()
     }
     
@@ -359,7 +361,7 @@ class DanmakuVerticalTrack: NSObject, DanmakuTrack, CAAnimationDelegate {
         self.clock = clock
     }
     
-    func shoot(danmaku: DanmakuCell) {
+    func shoot(danmaku: DanmakuCell, playImmediately: Bool) {
         cells.append(danmaku)
         #if os(macOS)
         let originX = (view!.bounds.width - danmaku.bounds.width) / 2.0
@@ -370,7 +372,9 @@ class DanmakuVerticalTrack: NSObject, DanmakuTrack, CAAnimationDelegate {
         #endif
         danmaku.model?.track = index
         prepare(danmaku: danmaku)
-        addAnimation(to: danmaku)
+        if playImmediately {
+            addAnimation(to: danmaku)
+        }
     }
     
     func canShoot(danmaku: DanmakuCellModel) -> Bool {

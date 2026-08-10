@@ -180,7 +180,7 @@ public class DanmakuView: PlatformView {
         }
     }
     
-    /// State of play,  The danmaku can only be sent in play status.
+    /// State of play. Danmaku sent while paused is displayed without starting its animation.
     public private(set) var status: DanmakuStatus = .stop
     
     /// The display area of the danmaku is set between 0 and 1. Setting this property will affect the number of danmaku tracks.
@@ -454,7 +454,7 @@ extension DanmakuView: UIGestureRecognizerDelegate {
 public extension DanmakuView {
     
     func shoot(danmaku: DanmakuCellModel) {
-        guard status == .play else { return }
+        guard status != .stop else { return }
         switch danmaku.type {
         case .floating:
             guard enableFloatingDanmaku else { return }
@@ -488,11 +488,11 @@ public extension DanmakuView {
         }
         delegate?.danmakuView(self, willDisplay: cell)
         cell.redraw()
-        shootTrack.shoot(danmaku: cell)
+        shootTrack.shoot(danmaku: cell, playImmediately: status == .play)
     }
     
     func canShoot(danmaku: DanmakuCellModel) -> Bool {
-        guard status == .play else { return false }
+        guard status != .stop else { return false }
         switch danmaku.type {
         case .floating:
             guard enableFloatingDanmaku else { return false }
