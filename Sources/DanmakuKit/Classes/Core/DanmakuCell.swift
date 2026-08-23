@@ -84,6 +84,13 @@ open class DanmakuCell: PlatformView {
         #endif
     }
     
+    public var isPaused: Bool {
+        #if os(macOS)
+        layer?.animationKeys()?.count == 0 || layer?.speed == 0.0
+        #else
+        layer.animationKeys()?.count == 0 || layer.speed == 0.0
+        #endif
+    }
 }
 
 extension DanmakuCell {
