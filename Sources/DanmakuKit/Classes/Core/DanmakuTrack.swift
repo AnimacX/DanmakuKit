@@ -391,16 +391,7 @@ class DanmakuVerticalTrack: NSObject, DanmakuTrack, CAAnimationDelegate {
         guard let findCell = cells.first(where: { (c) -> Bool in
             return c.model?.isEqual(to: danmaku) ?? false
         }) else { return false }
-        #if os(macOS)
-        if let layer = findCell.layer {
-            let pausedTime = layer.timeOffset
-            layer.speed = 1.0
-            layer.timeOffset = 0.0
-            layer.beginTime = clock.currentTime - pausedTime
-        }
-        #else
         addAnimation(to: findCell)
-        #endif
         return true
     }
 
@@ -419,11 +410,7 @@ class DanmakuVerticalTrack: NSObject, DanmakuTrack, CAAnimationDelegate {
             return c.model?.isEqual(to: danmaku) ?? false
         }) else { return false }
         #if os(macOS)
-        if let layer = findCell.layer {
-            let pausedTime = layer.convertTime(clock.currentTime, from: nil)
-            layer.speed = 0.0
-            layer.timeOffset = pausedTime
-        }
+        findCell.layer?.removeAllAnimations()
         #else
         findCell.layer.removeAllAnimations()
         #endif
