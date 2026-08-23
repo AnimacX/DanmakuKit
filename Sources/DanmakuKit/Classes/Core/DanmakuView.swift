@@ -543,9 +543,6 @@ public extension DanmakuView {
     
     func pause() {
         guard status != .pause else { return }
-#if os(macOS)
-        stopCurrentHovered()
-#endif
         floatingTracks.forEach {
             $0.pause()
         }

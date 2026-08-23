@@ -187,6 +187,12 @@ class DanmakuFloatingTrack: NSObject, DanmakuTrack, CAAnimationDelegate {
             $0.frame.origin = CGPoint(x: rf.midX - $0.bounds.width / 2.0, y: rf.midY - $0.bounds.height / 2.0)
             #if os(macOS)
             $0.layer?.removeAllAnimations()
+            // reset layer state for single paused danmaku
+            if let layer = $0.layer, layer.speed == 0.0 {
+                layer.speed = 1.0
+                layer.timeOffset = 0.0
+                layer.beginTime = 0.0
+            }
             #else
             $0.layer.removeAllAnimations()
             #endif
@@ -408,6 +414,12 @@ class DanmakuVerticalTrack: NSObject, DanmakuTrack, CAAnimationDelegate {
         cells.forEach {
             #if os(macOS)
             $0.layer?.removeAllAnimations()
+            // reset layer state for single paused danmaku
+            if let layer = $0.layer, layer.speed == 0.0 {
+                layer.speed = 1.0
+                layer.timeOffset = 0.0
+                layer.beginTime = 0.0
+            }
             #else
             $0.layer.removeAllAnimations()
             #endif
