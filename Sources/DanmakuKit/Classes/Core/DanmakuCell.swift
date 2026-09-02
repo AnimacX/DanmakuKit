@@ -85,11 +85,13 @@ open class DanmakuCell: PlatformView {
     }
     
     public var isPaused: Bool {
-        #if os(macOS)
-        layer?.animationKeys()?.count == 0 || layer?.speed == 0.0
-        #else
-        layer.animationKeys()?.count == 0 || layer.speed == 0.0
-        #endif
+#if os(macOS)
+        guard let layer else { return true }
+#else
+        let layer = layer
+#endif
+        return layer.speed == 0.0
+            || (layer.animationKeys()?.isEmpty ?? true)
     }
 }
 

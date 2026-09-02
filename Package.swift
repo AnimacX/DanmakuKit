@@ -9,7 +9,8 @@ let package = Package(
     ],
     dependencies: [],
     targets: [
-        .target(name: "DanmakuKit", dependencies:[])
+        .target(name: "DanmakuKit", dependencies:[]),
+        .testTarget(name: "DanmakuKitTests", dependencies: ["DanmakuKit"])
     ],
     swiftLanguageModes: [.v5]
 )
