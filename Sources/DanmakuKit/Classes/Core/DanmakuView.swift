@@ -281,6 +281,8 @@ public class DanmakuView: PlatformView {
 
 #if os(macOS)
     private var hoveredCell: DanmakuCell?
+    private weak var containerClickRecognizer: NSClickGestureRecognizer?
+    private var containerClickClaimsCurrentEvent = false
 #elseif canImport(UIKit)
     private weak var containerTapRecognizer: UITapGestureRecognizer?
     private var containerTapClaimsCurrentTouch = false
@@ -298,6 +300,7 @@ public class DanmakuView: PlatformView {
         let containerClick = NSClickGestureRecognizer(target: self, action: #selector(containerDidClick(_:)))
         containerClick.delaysPrimaryMouseButtonEvents = false
         containerClick.delegate = self
+        containerClickRecognizer = containerClick
         self.addGestureRecognizer(containerClick)
 #else
         let bgTap = UITapGestureRecognizer(target: self, action: #selector(danmakuDidTap(_:)))
@@ -460,9 +463,32 @@ public class DanmakuView: PlatformView {
 extension DanmakuView: NSGestureRecognizerDelegate {
     public func gestureRecognizer(
         _ gestureRecognizer: NSGestureRecognizer,
+        shouldAttemptToRecognizeWith event: NSEvent
+    ) -> Bool {
+        guard gestureRecognizer === containerClickRecognizer else { return true }
+
+        let point = convert(event.locationInWindow, from: nil)
+        containerClickClaimsCurrentEvent =
+            danmakuCell(containing: hitTest(point)) != nil
+            || locateDanmakuCell(at: point) != nil
+        return true
+    }
+
+    public func gestureRecognizer(
+        _ gestureRecognizer: NSGestureRecognizer,
+        shouldBeRequiredToFailBy otherGestureRecognizer: NSGestureRecognizer
+    ) -> Bool {
+        gestureRecognizer === containerClickRecognizer
+            && containerClickClaimsCurrentEvent
+            && otherGestureRecognizer !== containerClickRecognizer
+    }
+
+    public func gestureRecognizer(
+        _ gestureRecognizer: NSGestureRecognizer,
         shouldRecognizeSimultaneouslyWith otherGestureRecognizer: NSGestureRecognizer
     ) -> Bool {
-        true
+        guard gestureRecognizer === containerClickRecognizer else { return true }
+        return !containerClickClaimsCurrentEvent
     }
 }
 #elseif canImport(UIKit)
@@ -932,8 +958,19 @@ private extension DanmakuView {
 #if os(macOS)
     @objc
     private func containerDidClick(_ gesture: NSClickGestureRecognizer) {
+        defer { containerClickClaimsCurrentEvent = false }
         let p = gesture.location(in: self)
-        if let cell = locateDanmakuCell(at: p) {
+        let hitView = hitTest(p)
+        if let control = control(containing: hitView) {
+            // 手势系统会消费完成控件点击跟踪所需的 mouseUp，控件自身永远
+            // 收不到完整点击序列，因此由容器识别器代为触发控件 action。
+            if control.isEnabled {
+                control.sendAction(control.action, to: control.target)
+            }
+            return
+        }
+        if let cell = danmakuCell(containing: hitView)
+            ?? locateDanmakuCell(at: p) {
             delegate?.danmakuView(self, didTapped: cell)
             switchCurrentToggled(cell)
         } else {
@@ -941,7 +978,29 @@ private extension DanmakuView {
             stopCurrentToggled()
         }
     }
+
+    private func control(containing view: NSView?) -> NSControl? {
+        var current = view
+        while let candidate = current, candidate !== self {
+            if let control = candidate as? NSControl {
+                return control
+            }
+            current = candidate.superview
+        }
+        return nil
+    }
 #endif
+
+    private func danmakuCell(containing view: PlatformView?) -> DanmakuCell? {
+        var current = view
+        while let candidate = current, candidate !== self {
+            if let cell = candidate as? DanmakuCell {
+                return cell
+            }
+            current = candidate.superview
+        }
+        return nil
+    }
     
     private func locateDanmakuCell(at p: PlatformPoint) -> DanmakuCell? {
         for sub in subviews.reversed() {
@@ -999,16 +1058,6 @@ private extension DanmakuView {
         handleToggle(at: tap.location(in: self))
     }
 
-    private func danmakuCell(containing view: UIView?) -> DanmakuCell? {
-        var current = view
-        while let candidate = current, candidate !== self {
-            if let cell = candidate as? DanmakuCell {
-                return cell
-            }
-            current = candidate.superview
-        }
-        return nil
-    }
 #endif
     
 }
