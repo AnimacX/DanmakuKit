@@ -340,6 +340,9 @@ public class DanmakuView: PlatformView {
         stop()
     }
 
+    /// Cells move via layer animation while their view frames stay put;
+    /// offset hit points by the presentation-frame delta so hit testing
+    /// (e.g. action menus on animated cells) works against static frames.
     private func convertHitPoint(
         _ point: PlatformPoint,
         to subview: PlatformView
@@ -460,6 +463,11 @@ public class DanmakuView: PlatformView {
 }
 
 #if os(macOS)
+/// Click arbitration for the whole danmaku area: when a click lands on a
+/// cell, the container recognizer demands that every other recognizer
+/// (SwiftUI and player gestures in the window) fail, so a danmaku click
+/// never also triggers the player underneath. Clicks elsewhere coexist
+/// normally.
 extension DanmakuView: NSGestureRecognizerDelegate {
     public func gestureRecognizer(
         _ gestureRecognizer: NSGestureRecognizer,
@@ -962,8 +970,10 @@ private extension DanmakuView {
         let p = gesture.location(in: self)
         let hitView = hitTest(p)
         if let control = control(containing: hitView) {
-            // 手势系统会消费完成控件点击跟踪所需的 mouseUp，控件自身永远
-            // 收不到完整点击序列，因此由容器识别器代为触发控件 action。
+            // The gesture system consumes the mouseUp that completes control
+            // click tracking, so controls never receive a full click
+            // sequence. The container recognizer forwards the control's own
+            // action instead.
             if control.isEnabled {
                 control.sendAction(control.action, to: control.target)
             }
