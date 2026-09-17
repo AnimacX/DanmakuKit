@@ -370,7 +370,6 @@ public class DanmakuView: PlatformView {
     
     public override func viewDidMoveToWindow() {
         super.viewDidMoveToWindow()
-        window?.acceptsMouseMovedEvents = true
         setupHoverTracking()
     }
     
