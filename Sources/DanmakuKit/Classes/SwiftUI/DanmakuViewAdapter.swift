@@ -132,6 +132,7 @@ public struct DanmakuViewAdapter: PlatformViewRepresentable {
                 self.danmakuView?.recalculateTracks()
             }
 #elseif os(macOS)
+            danmakuView?.clipsToBounds = true
             danmakuView?.postsFrameChangedNotifications = true
             frameObserver = NotificationCenter.default
                 .publisher(for: NSView.frameDidChangeNotification, object: danmakuView)
