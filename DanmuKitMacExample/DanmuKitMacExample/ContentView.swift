@@ -57,6 +57,8 @@ struct ContentView: View {
     @State private var danmakuIndex = 0
     @State private var isOverlap = false
     @State private var playingSpeed: Double = 1.0
+    @State private var fontScale: Double = 1
+    @State private var automaticShooting = true
     @State private var delegateRef: DanmakuDelegate? = nil // strong ref to avoid immediate deallocation warning
     @StateObject private var fpsMonitor = FPSMonitor()
 
@@ -137,6 +139,23 @@ struct ContentView: View {
                     cleanButtonClicked()
                 }
                 .buttonStyle(.bordered)
+
+                Button("Font samples") {
+                    shootFontSamples()
+                }
+                .buttonStyle(.bordered)
+            }
+
+            HStack(spacing: 20) {
+                Toggle("Automatic", isOn: $automaticShooting)
+                Text("Font scale: \(String(format: "%.2f", fontScale))x")
+                    .monospacedDigit()
+                Slider(value: $fontScale, in: 0.5...2, step: 0.05)
+                    .frame(width: 240)
+                    .accessibilityLabel("Font scale")
+                    .onChange(of: fontScale) { newValue in
+                        coordinator.fontScale = CGFloat(newValue)
+                    }
             }
 
             // Settings
@@ -196,6 +215,7 @@ struct ContentView: View {
 
     // MARK: - Private Methods
     private func setupDanmakuView() {
+        coordinator.fontScale = CGFloat(fontScale)
         // Keep a strong reference to delegate to avoid immediate deallocation
         let delegate = DanmakuDelegate()
         self.delegateRef = delegate
@@ -205,7 +225,7 @@ struct ContentView: View {
         // Configure danmaku view settings
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
             coordinator.danmakuView?.enableCellReusable = true
-            coordinator.danmakuView?.trackHeight = 20
+            coordinator.danmakuView?.trackHeight = 60
             coordinator.danmakuView?.isOverlap = isOverlap
             coordinator.danmakuView?.playingSpeed = Float(playingSpeed)
         }
@@ -213,6 +233,7 @@ struct ContentView: View {
 
     private func setupTimer() {
         timer = Timer.scheduledTimer(withTimeInterval: 0.1, repeats: true) { _ in
+            guard automaticShooting else { return }
             shootRandomDanmaku()
         }
     }
@@ -261,6 +282,26 @@ struct ContentView: View {
     }
 
     // MARK: - Button Actions
+    private func shootFontSamples() {
+        automaticShooting = false
+        coordinator.pause()
+        coordinator.clean()
+        let samples: [(DanmakuCellType, String, NSColor, CGFloat)] = [
+            (.floating, "滚动·基础16pt", .white, 16),
+            (.top, "顶部·基础20pt", .systemYellow, 20),
+            (.bottom, "底部·基础24pt", .systemGreen, 24),
+        ]
+        for (type, text, color, baseSize) in samples {
+            let model = DanmakuTextCellModel(text: text)
+            model.type = type
+            model.font = .boldSystemFont(ofSize: baseSize)
+            model.textColor = color
+            model.displayTime = 60
+            model.calculateSize()
+            coordinator.sync(danmaku: model, at: 0.25)
+        }
+    }
+
     private func playButtonClicked() {
         coordinator.play()
         print("Danmaku started playing")

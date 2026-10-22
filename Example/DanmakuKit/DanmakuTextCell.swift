@@ -32,7 +32,7 @@ class DanmakuTextCell: DanmakuCell {
         context.setStrokeColor(UIColor.white.cgColor)
         context.saveGState()
         context.setTextDrawingMode(.stroke)
-        let attributes: [NSAttributedString.Key: Any] = [.font: model.font, .foregroundColor: UIColor.white]
+        let attributes: [NSAttributedString.Key: Any] = [.font: model.scaledFont, .foregroundColor: UIColor.white]
         text.draw(at: .zero, withAttributes: attributes)
         context.restoreGState()
         

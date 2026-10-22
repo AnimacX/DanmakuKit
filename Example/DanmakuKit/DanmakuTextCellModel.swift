@@ -10,13 +10,27 @@ import Foundation
 import DanmakuKit
 import SwiftyJSON
 
-class DanmakuTextCellModel: DanmakuCellModel, TestDanmakuCellModel, Equatable {
+class DanmakuTextCellModel: DanmakuFontScalable, TestDanmakuCellModel, Equatable {
     
     var identifier = UUID().uuidString
     
     var text = ""
     
     var font = UIFont.systemFont(ofSize: 15)
+
+    var fontScale: CGFloat {
+        get { currentFontScale }
+        set {
+            precondition(newValue.isFinite && newValue > 0)
+            guard currentFontScale != newValue else { return }
+            currentFontScale = newValue
+            calculateSize()
+        }
+    }
+
+    private var currentFontScale: CGFloat = 1
+
+    var scaledFont: UIFont { font.withSize(font.pointSize * fontScale) }
     
     var offsetTime: TimeInterval = 0
     
@@ -36,7 +50,7 @@ class DanmakuTextCellModel: DanmakuCellModel, TestDanmakuCellModel, Equatable {
     
     func calculateSize() {
         size = NSString(string: text).boundingRect(with: CGSize(width: CGFloat(Float.infinity
-            ), height: 20), options: [.usesFontLeading, .usesLineFragmentOrigin], attributes: [.font: font], context: nil).size
+            ), height: CGFloat.greatestFiniteMagnitude), options: [.usesFontLeading, .usesLineFragmentOrigin], attributes: [.font: scaledFont], context: nil).size
     }
     
     static func == (lhs: DanmakuTextCellModel, rhs: DanmakuTextCellModel) -> Bool {

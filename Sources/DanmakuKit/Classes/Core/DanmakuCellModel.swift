@@ -35,3 +35,18 @@ public protocol DanmakuCellModel {
     func isEqual(to cellModel: DanmakuCellModel) -> Bool
     
 }
+
+/// Adopt this protocol for text models whose measured size depends on a font.
+/// Keep the base font unchanged. Measure and draw using the base font multiplied
+/// by `fontScale`, and recalculate `size` when the scale changes.
+public protocol DanmakuFontScalable: DanmakuCellModel {
+    var fontScale: CGFloat { get set }
+}
+
+extension DanmakuCellModel {
+    func applyingFontScale(_ scale: CGFloat) -> DanmakuCellModel {
+        guard var model = self as? DanmakuFontScalable else { return self }
+        model.fontScale = scale
+        return model
+    }
+}

@@ -117,6 +117,26 @@ public enum DanmakuTrackPadding: Hashable {
 public class DanmakuView: PlatformView {
     
     public weak var delegate: DanmakuViewDelegate?
+
+    /// Multiplies each text model's base font size. Defaults to 1.
+    /// Updates displayed cells immediately and applies to future shoot/sync calls.
+    /// Models opt in through `DanmakuFontScalable`. Call on the main thread.
+    public var fontScale: CGFloat {
+        get { currentFontScale }
+        set {
+            precondition(newValue.isFinite && newValue > 0, "Font scale must be finite and positive.")
+            guard currentFontScale != newValue else { return }
+            currentFontScale = newValue
+            CATransaction.begin()
+            CATransaction.setDisableActions(true)
+            for track in floatingTracks + topTracks + bottomTracks {
+                track.fontScale = newValue
+            }
+            CATransaction.commit()
+        }
+    }
+
+    private var currentFontScale: CGFloat = 1
     
     /// If this property is false, the danmaku will not be reused and danmakuView(_:dequeueReusable danmaku:) methods will not be called.
     public var enableCellReusable = false
@@ -252,15 +272,15 @@ public class DanmakuView: PlatformView {
             // This ensures existing on-screen danmaku recompute durations with the new speed.
             update {
                 for i in 0..<floatingTracks.count {
-                    var track = floatingTracks[i]
+                    let track = floatingTracks[i]
                     track.playingSpeed = playingSpeed
                 }
                 for i in 0..<topTracks.count {
-                    var track = topTracks[i]
+                    let track = topTracks[i]
                     track.playingSpeed = playingSpeed
                 }
                 for i in 0..<bottomTracks.count {
-                    var track = bottomTracks[i]
+                    let track = bottomTracks[i]
                     track.playingSpeed = playingSpeed
                 }
             }
@@ -551,6 +571,7 @@ public extension DanmakuView {
     
     func shoot(danmaku: DanmakuCellModel) {
         guard status != .stop else { return }
+        let danmaku = danmaku.applyingFontScale(fontScale)
         switch danmaku.type {
         case .floating:
             guard enableFloatingDanmaku else { return }
@@ -589,6 +610,7 @@ public extension DanmakuView {
     
     func canShoot(danmaku: DanmakuCellModel) -> Bool {
         guard status != .stop else { return false }
+        let danmaku = danmaku.applyingFontScale(fontScale)
         switch danmaku.type {
         case .floating:
             guard enableFloatingDanmaku else { return false }
@@ -707,6 +729,7 @@ public extension DanmakuView {
     ///   - progress: progress of danmaku display
     func sync(danmaku: DanmakuCellModel, at progress: Float) {
         guard status != .stop else { return }
+        let danmaku = danmaku.applyingFontScale(fontScale)
         assert(progress <= 1.0, "Cannot sync danmaku at progress \(progress).")
         switch danmaku.type {
         case .floating:
@@ -754,7 +777,7 @@ public extension DanmakuView {
 #endif
         toggledCell = nil
     }
-    
+
     /// When you change some properties of the danmakuView or cellModel that might affect the danmaku, you must make changes in the closure of this method.
     /// E.g.This method will be used when you change the displayTime property in the cellModel.
     /// - Parameter closure: update closure
@@ -787,7 +810,7 @@ private extension DanmakuView {
             floatingTracks.removeLast(Int(abs(diffFloatingTrackCount)))
         }
         for i in 0..<floatingTracks.count {
-            var track = floatingTracks[i]
+            let track = floatingTracks[i]
             track.stopClosure = { [weak self] (cell) in
                 guard let strongSelf = self else { return }
                 strongSelf.cellPlayingStop(cell)
@@ -796,6 +819,7 @@ private extension DanmakuView {
             track.playingSpeed = playingSpeed
             track.positionY = CGFloat(i) * trackHeight + trackHeight / 2.0 + paddingTopValue
             track.opacity = Float(opacity)
+            track.fontScale = fontScale
         }
     }
     
@@ -813,7 +837,7 @@ private extension DanmakuView {
             topTracks.removeLast(Int(abs(diffFloatingTrackCount)))
         }
         for i in 0..<topTracks.count {
-            var track = topTracks[i]
+            let track = topTracks[i]
             track.stopClosure = { [weak self] (cell) in
                 guard let strongSelf = self else { return }
                 strongSelf.cellPlayingStop(cell)
@@ -822,6 +846,7 @@ private extension DanmakuView {
             track.playingSpeed = playingSpeed
             track.positionY = CGFloat(i) * trackHeight + trackHeight / 2.0 + paddingTopValue
             track.opacity = Float(opacity)
+            track.fontScale = fontScale
         }
     }
     
@@ -839,7 +864,7 @@ private extension DanmakuView {
             bottomTracks.removeFirst(Int(abs(diffFloatingTrackCount)))
         }
         for i in (0..<bottomTracks.count).reversed() {
-            var track = bottomTracks[i]
+            let track = bottomTracks[i]
             track.stopClosure = { [weak self] (cell) in
                 guard let strongSelf = self else { return }
                 strongSelf.cellPlayingStop(cell)
@@ -849,6 +874,7 @@ private extension DanmakuView {
             track.playingSpeed = playingSpeed
             track.positionY = bounds.height - CGFloat(index) * trackHeight - trackHeight / 2.0 - paddingBottomValue
             track.opacity = Float(opacity)
+            track.fontScale = fontScale
         }
     }
     

@@ -14,7 +14,7 @@ class FunctionDemoViewController: UIViewController {
     private var timer: Timer?
     
     private var displayTime: Double = 8
-    
+
     private var danmakus: [AnyObject & DanmakuCellModel & TestDanmakuCellModel] = []
     
     private var interval: TimeInterval = 0.5
@@ -45,20 +45,30 @@ class FunctionDemoViewController: UIViewController {
         view.addSubview(cleanButton)
         view.addSubview(playSpeedLabel)
         view.addSubview(playSpeedSlider)
+        view.addSubview(fontScaleLabel)
+        view.addSubview(fontScaleControl)
+        view.addSubview(fontSamplesButton)
         
         danmakuView.frame.origin.y = 100
         playButton.sizeToFit()
         pauseButton.sizeToFit()
         stopButton.sizeToFit()
         
-        playButton.center.x = SCREEN_WIDTH / 2.0
-        playButton.frame.origin.y = 350
+        fontScaleLabel.frame = CGRect(x: 16, y: 355, width: 120, height: 24)
+        fontScaleControl.frame = CGRect(x: 140, y: 355, width: SCREEN_WIDTH - 156, height: 28)
+
+        playButton.center.x = SCREEN_WIDTH / 2.0 - 100
+        playButton.frame.origin.y = 385
         
         pauseButton.center.x = SCREEN_WIDTH / 2.0
-        pauseButton.frame.origin.y = 380
+        pauseButton.frame.origin.y = 385
         
-        stopButton.center.x = SCREEN_WIDTH / 2.0
-        stopButton.frame.origin.y = 410
+        stopButton.center.x = SCREEN_WIDTH / 2.0 + 100
+        stopButton.frame.origin.y = 385
+
+        fontSamplesButton.sizeToFit()
+        fontSamplesButton.center.x = SCREEN_WIDTH / 2.0
+        fontSamplesButton.frame.origin.y = 410
         
         changeSpeedLabel.sizeToFit()
         changeSpeedLabel.frame.origin.y = 440
@@ -247,6 +257,33 @@ class FunctionDemoViewController: UIViewController {
     func playSpeedChange(_ sender: UISlider) {
         danmakuView.playingSpeed = sender.value
     }
+
+    @objc
+    func changeFontScale(_ sender: UISegmentedControl) {
+        danmakuView.fontScale = CGFloat([0.5, 1, 1.5, 2][sender.selectedSegmentIndex])
+        fontScaleLabel.text = String(format: "Font scale: %.1fx", Double(danmakuView.fontScale))
+    }
+
+    @objc
+    func showFontSamples() {
+        pause()
+        danmakuView.clean()
+        danmakuView.trackHeight = 60
+        for (type, text, baseSize) in [
+            (DanmakuCellType.floating, "滚动16pt", CGFloat(16)),
+            (.top, "顶部20pt", CGFloat(20)),
+            (.bottom, "底部24pt", CGFloat(24)),
+        ] {
+            let model = DanmakuTextCellModel(json: nil)
+            model.text = text
+            model.type = type
+            model.font = .systemFont(ofSize: baseSize)
+            model.displayTime = 60
+            model.calculateSize()
+            danmakus.append(model)
+            danmakuView.sync(danmaku: model, at: 0.25)
+        }
+    }
     
     func randomIntNumber(lower: Int = 0,upper: Int = Int(UInt32.max)) -> Int {
         return lower + Int(arc4random_uniform(UInt32(upper - lower)))
@@ -291,6 +328,28 @@ class FunctionDemoViewController: UIViewController {
         view.setTitleColor(.black, for: .normal)
         view.addTarget(self, action: #selector(play), for: .touchUpInside)
         return view
+    }()
+
+    lazy var fontScaleLabel: UILabel = {
+        let label = UILabel()
+        label.text = "Font scale: 1.0x"
+        label.textColor = .black
+        return label
+    }()
+
+    lazy var fontScaleControl: UISegmentedControl = {
+        let control = UISegmentedControl(items: ["0.5x", "1x", "1.5x", "2x"])
+        control.selectedSegmentIndex = 1
+        control.accessibilityLabel = "Font scale"
+        control.addTarget(self, action: #selector(changeFontScale(_:)), for: .valueChanged)
+        return control
+    }()
+
+    lazy var fontSamplesButton: UIButton = {
+        let button = UIButton(type: .system)
+        button.setTitle("Font samples", for: .normal)
+        button.addTarget(self, action: #selector(showFontSamples), for: .touchUpInside)
+        return button
     }()
     
     lazy var pauseButton: UIButton = {

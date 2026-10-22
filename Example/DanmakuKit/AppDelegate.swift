@@ -23,6 +23,9 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
 
 
     func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?) -> Bool {
+        if #available(iOS 13.0, *) {
+            return true
+        }
         window = UIWindow(frame: UIScreen.main.bounds)
         window?.rootViewController = UINavigationController(rootViewController: ViewController())
         window?.makeKeyAndVisible()
@@ -55,5 +58,18 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
         return AppOrientation.shared.orientation
     }
 
+}
+
+@available(iOS 13.0, *)
+final class DanmakuSceneDelegate: UIResponder, UIWindowSceneDelegate {
+    var window: UIWindow?
+
+    func scene(_ scene: UIScene, willConnectTo session: UISceneSession, options connectionOptions: UIScene.ConnectionOptions) {
+        guard let scene = scene as? UIWindowScene else { return }
+        let window = UIWindow(windowScene: scene)
+        window.rootViewController = UINavigationController(rootViewController: ViewController())
+        window.makeKeyAndVisible()
+        self.window = window
+    }
 }
 

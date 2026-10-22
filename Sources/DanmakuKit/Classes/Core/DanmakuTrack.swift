@@ -16,7 +16,7 @@ let MAX_FLOAT_X = CGFloat.infinity / 2.0
 
 //MARK: DanmakuTrack
 
-protocol DanmakuTrack {
+protocol DanmakuTrack: AnyObject {
     
     var positionY: CGFloat { get set }
     
@@ -31,6 +31,8 @@ protocol DanmakuTrack {
     var playingSpeed: Float { get set }
 
     var opacity: Float { get set }
+
+    var fontScale: CGFloat { get set }
     
     init(view: PlatformView, clock: DanmakuClock)
     
@@ -55,7 +57,7 @@ protocol DanmakuTrack {
     func canSync(_ danmaku: DanmakuCellModel, at progress: Float) -> Bool
     
     func clean()
-    
+
 }
 
 let FLOATING_ANIMATION_KEY = "FLOATING_ANIMATION_KEY"
@@ -65,6 +67,17 @@ let DANMAKU_CELL_KEY = "DANMAKU_CELL_KEY"
 //MARK: DanmakuFloatingTrack
 
 class DanmakuFloatingTrack: NSObject, DanmakuTrack, CAAnimationDelegate {
+
+    var fontScale: CGFloat {
+        get { currentFontScale }
+        set {
+            guard currentFontScale != newValue else { return }
+            currentFontScale = newValue
+            updateFontScale()
+        }
+    }
+
+    private var currentFontScale: CGFloat = 1
     
     var positionY: CGFloat = 0 {
         didSet {
@@ -168,52 +181,20 @@ class DanmakuFloatingTrack: NSObject, DanmakuTrack, CAAnimationDelegate {
         guard let findCell = cells.first(where: { (c) -> Bool in
             return c.model?.isEqual(to: danmaku) ?? false
         }) else { return false }
-        #if os(macOS)
-        if let layer = findCell.layer {
-            let pausedTime = layer.timeOffset
-            layer.speed = 1.0
-            layer.timeOffset = 0.0
-            layer.beginTime = clock.currentTime - pausedTime
-        }
-        #else
+        guard findCell.isPaused else { return true }
         addAnimation(to: findCell)
-        #endif
         return true
     }
 
     func pause() {
-        cells.forEach {
-            let rf = $0.realFrame
-            $0.frame.origin = CGPoint(x: rf.midX - $0.bounds.width / 2.0, y: rf.midY - $0.bounds.height / 2.0)
-            #if os(macOS)
-            $0.layer?.removeAllAnimations()
-            // reset layer state for single paused danmaku
-            if let layer = $0.layer {
-                layer.speed = 1.0
-                layer.timeOffset = 0.0
-                layer.beginTime = 0.0
-            }
-            #else
-            $0.layer.removeAllAnimations()
-            #endif
-        }
+        cells.forEach { freeze($0) }
     }
 
     func pause(_ danmaku: DanmakuCellModel) -> Bool {
         guard let findCell = cells.first(where: { (c) -> Bool in
             return c.model?.isEqual(to: danmaku) ?? false
         }) else { return false }
-        let rf = findCell.realFrame
-        findCell.frame.origin = CGPoint(x: rf.midX - findCell.bounds.width / 2.0, y: rf.midY - findCell.bounds.height / 2.0)
-        #if os(macOS)
-        if let layer = findCell.layer {
-            let pausedTime = layer.convertTime(clock.currentTime, from: nil)
-            layer.speed = 0.0
-            layer.timeOffset = pausedTime
-        }
-        #else
-        findCell.layer.removeAllAnimations()
-        #endif
+        freeze(findCell)
         return true
     }
     
@@ -258,10 +239,32 @@ class DanmakuFloatingTrack: NSObject, DanmakuTrack, CAAnimationDelegate {
     func clean() {
         stop()
     }
+
+    private func updateFontScale() {
+        for cell in cells {
+            guard var model = cell.model as? DanmakuFontScalable else { continue }
+            let wasPaused = cell.isPaused
+            freeze(cell)
+            let frame = cell.frame
+            model.fontScale = fontScale
+            cell.model = model
+            cell.frame = CGRect(
+                x: frame.minX,
+                y: frame.midY - model.size.height / 2,
+                width: model.size.width,
+                height: model.size.height
+            )
+            cell.redraw()
+            if !wasPaused {
+                addAnimation(to: cell)
+            }
+        }
+    }
     
     func animationDidStop(_ anim: CAAnimation, finished flag: Bool) {
+        guard flag else { return }
         guard let danmaku = anim.value(forKey: DANMAKU_CELL_KEY) as? DanmakuCell else { return }
-        danmaku.animationTime += (CFAbsoluteTimeGetCurrent() - danmaku.animationBeginTime) * Double(playingSpeed)
+        danmaku.animationTime = danmaku.model?.displayTime ?? danmaku.animationTime
         if flag {
             var findCell: DanmakuCell?
             cells.removeAll { (cell) -> Bool in
@@ -288,13 +291,30 @@ class DanmakuFloatingTrack: NSObject, DanmakuTrack, CAAnimationDelegate {
         }
     }
     
+    private func freeze(_ cell: DanmakuCell) {
+        let frame = cell.realFrame
+#if os(macOS)
+        guard let layer = cell.layer else { return }
+#else
+        let layer = cell.layer
+#endif
+        if let animation = layer.animation(forKey: FLOATING_ANIMATION_KEY) {
+            let elapsed = max(0, min(animation.duration, layer.convertTime(clock.currentTime, from: nil) - animation.beginTime))
+            cell.animationTime += elapsed * Double(playingSpeed)
+        }
+        layer.removeAnimation(forKey: FLOATING_ANIMATION_KEY)
+        layer.speed = 1
+        layer.timeOffset = 0
+        layer.beginTime = 0
+        cell.frame.origin = CGPoint(x: frame.minX, y: frame.midY - cell.bounds.height / 2)
+    }
+
     private func addAnimation(to danmaku: DanmakuCell) {
         guard let cellModel = danmaku.model else { return }
         danmaku.animationBeginTime = CFAbsoluteTimeGetCurrent()
-        let rate = max(danmaku.frame.maxX / (view!.bounds.width + danmaku.frame.width), 0)
         let animation = CABasicAnimation(keyPath: "position.x")
         animation.beginTime = clock.currentTime
-        animation.duration = (cellModel.displayTime * Double(rate)) / Double(playingSpeed)
+        animation.duration = max(0, cellModel.displayTime - danmaku.animationTime) / Double(playingSpeed)
         animation.delegate = self
         #if os(macOS)
         animation.fromValue = NSNumber(value: Float(danmaku.layer?.position.x ?? danmaku.frame.midX))
@@ -323,6 +343,17 @@ class DanmakuFloatingTrack: NSObject, DanmakuTrack, CAAnimationDelegate {
 //MARK: DanmakuVerticalTrack
 
 class DanmakuVerticalTrack: NSObject, DanmakuTrack, CAAnimationDelegate {
+
+    var fontScale: CGFloat {
+        get { currentFontScale }
+        set {
+            guard currentFontScale != newValue else { return }
+            currentFontScale = newValue
+            updateFontScale()
+        }
+    }
+
+    private var currentFontScale: CGFloat = 1
     
     var positionY: CGFloat = 0 {
         didSet {
@@ -480,6 +511,21 @@ class DanmakuVerticalTrack: NSObject, DanmakuTrack, CAAnimationDelegate {
     
     func clean() {
         stop()
+    }
+
+    private func updateFontScale() {
+        for cell in cells {
+            guard var model = cell.model as? DanmakuFontScalable else { continue }
+            model.fontScale = fontScale
+            cell.model = model
+            cell.frame = CGRect(
+                x: (view!.bounds.width - model.size.width) / 2,
+                y: positionY - model.size.height / 2,
+                width: model.size.width,
+                height: model.size.height
+            )
+            cell.redraw()
+        }
     }
     
     func animationDidStop(_ anim: CAAnimation, finished flag: Bool) {

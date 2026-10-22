@@ -41,12 +41,18 @@ As shown in the GIF below, DanmakuKit offers three types of danmaku launch: floa
 1. Implement a model to inherit from the DanmakuCellModel. In this model you need to add your own properties and methods to draw the danmaku.
 
 ```swift
-class DanmakuTextCellModel: DanmakuCellModel {
+class DanmakuTextCellModel: DanmakuFontScalable {
     var identifier = ""
     
     var text = ""
     
-    var font = UIFont.systemFont(ofSize: 15)
+    var font = UIFont.systemFont(ofSize: 15) // Base font
+
+    var fontScale: CGFloat = 1 {
+        didSet { calculateSize() }
+    }
+
+    var scaledFont: UIFont { font.withSize(font.pointSize * fontScale) }
     
     var offsetTime: TimeInterval = 0
     
@@ -66,7 +72,7 @@ class DanmakuTextCellModel: DanmakuCellModel {
     
     func calculateSize() {
         size = NSString(string: text).boundingRect(with: CGSize(width: CGFloat(Float.infinity
-            ), height: 20), options: [.usesFontLeading, .usesLineFragmentOrigin], attributes: [.font: font], context: nil).size
+            ), height: CGFloat.greatestFiniteMagnitude), options: [.usesFontLeading, .usesLineFragmentOrigin], attributes: [.font: scaledFont], context: nil).size
     }
     
     func isEqual(to cellModel: DanmakuCellModel) -> Bool {
@@ -96,7 +102,7 @@ class DanmakuTextCell: DanmakuCell {
         context.setStrokeColor(UIColor.white.cgColor)
         context.saveGState()
         context.setTextDrawingMode(.stroke)
-        let attributes: [NSAttributedString.Key: Any] = [.font: model.font, .foregroundColor: UIColor.white]
+        let attributes: [NSAttributedString.Key: Any] = [.font: model.scaledFont, .foregroundColor: UIColor.white]
         text.draw(at: .zero, withAttributes: attributes)
         context.restoreGState()
         context.setTextDrawingMode(.fill)
@@ -138,6 +144,22 @@ Call stop() method to stop display danmaku and clean up resource. The memory ass
 ```swift
 danmakuView.stop()
 ```
+
+### Scale danmaku fonts
+
+Set `fontScale` on the main thread. The default is `1`:
+
+```swift
+danmakuView.fontScale = 1.5
+// SwiftUI
+coordinator.fontScale = 1.5
+```
+
+Text models adopt `DanmakuFontScalable`, store the scale, and recalculate `size` when it changes. Measure and draw using `scaledFont` (see the example above), whose point size is the base font size multiplied by the scale. The original `font` stays unchanged. Base sizes of 16, 20, and 24 become 24, 30, and 36 at 1.5x, then return to their original sizes at 1x.
+
+The view propagates the scale to floating, top, and bottom tracks. Each track resizes and redraws its cells while preserving position, remaining display time, and pause state. Future `canShoot`, `shoot`, and `sync` calls apply the scale before track selection; new tracks and reused cells inherit it as well. Image/GIF models that do not adopt the protocol retain their existing sizes. Track spacing is controlled separately by `trackHeight`.
+
+Both demos include a `Font samples` button that clears and pauses the view, then displays three types with base sizes of 16, 20, and 24. The macOS demo has a 0.5–2x slider, and the iOS `Function demo` has 0.5x, 1x, 1.5x, and 2x presets. Tap `play` after scaling to inspect playback.
 
 ### Gif Danmaku
 

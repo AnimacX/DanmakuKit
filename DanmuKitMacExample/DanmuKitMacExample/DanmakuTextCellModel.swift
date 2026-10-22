@@ -10,13 +10,29 @@ import Cocoa
 import DanmakuKit
 
 /// Example text danmaku model for macOS
-public class DanmakuTextCellModel: DanmakuCellModel {
+public class DanmakuTextCellModel: DanmakuFontScalable {
     
     public var identifier: String = ""
     
     public var text: String = ""
     
     public var font: NSFont = NSFont.systemFont(ofSize: 15)
+
+    public var fontScale: CGFloat {
+        get { currentFontScale }
+        set {
+            precondition(newValue.isFinite && newValue > 0)
+            guard currentFontScale != newValue else { return }
+            currentFontScale = newValue
+            calculateSize()
+        }
+    }
+
+    private var currentFontScale: CGFloat = 1
+
+    public var scaledFont: NSFont {
+        NSFont(descriptor: font.fontDescriptor, size: font.pointSize * fontScale)!
+    }
     
     /// 文本颜色（默认白色）
     public var textColor: NSColor = NSColor.white
@@ -55,7 +71,7 @@ public class DanmakuTextCellModel: DanmakuCellModel {
     public func calculateSize() {
         // 计算文本尺寸，必要时考虑描边和阴影带来的额外边距
         let attributes: [NSAttributedString.Key: Any] = [
-            .font: font
+            .font: scaledFont
         ]
 
         let attributedString = NSAttributedString(string: text, attributes: attributes)

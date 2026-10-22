@@ -111,6 +111,15 @@ public struct DanmakuViewAdapter: PlatformViewRepresentable {
         public func pause() { danmakuView?.pause() }
         public func stop() { danmakuView?.stop() }
         public func clean() { danmakuView?.clean() }
+        public var fontScale: CGFloat {
+            get { danmakuView?.fontScale ?? configuredFontScale }
+            set {
+                precondition(newValue.isFinite && newValue > 0, "Font scale must be finite and positive.")
+                configuredFontScale = newValue
+                danmakuView?.fontScale = newValue
+            }
+        }
+        private var configuredFontScale: CGFloat = 1
         public func shoot(danmaku: DanmakuCellModel) { danmakuView?.shoot(danmaku: danmaku) }
         
         public func canShoot(danmaku: DanmakuCellModel) -> Bool {
@@ -126,6 +135,7 @@ public struct DanmakuViewAdapter: PlatformViewRepresentable {
         
         func makeView() -> DanmakuView {
             danmakuView = DanmakuView(frame: .zero)
+            danmakuView?.fontScale = configuredFontScale
 #if canImport(UIKit)
             frameObserver = danmakuView?.publisher(for: \.frame).sink { [weak self] _ in
                 guard let self = self else { return }

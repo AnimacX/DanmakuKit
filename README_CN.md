@@ -41,12 +41,18 @@ DanmakuKit是一个高性能弹幕框架，提供了弹幕相关的基础功能�
 1. 实现一个从DanmakuCellModel继承的cellModel。在这个cellModel中需要添加自己的属性和方法来画出弹幕。
 
 ```swift
-class DanmakuTextCellModel: DanmakuCellModel {
+class DanmakuTextCellModel: DanmakuFontScalable {
     var identifier = ""
     
     var text = ""
     
-    var font = UIFont.systemFont(ofSize: 15)
+    var font = UIFont.systemFont(ofSize: 15) // Base font
+
+    var fontScale: CGFloat = 1 {
+        didSet { calculateSize() }
+    }
+
+    var scaledFont: UIFont { font.withSize(font.pointSize * fontScale) }
     
     var offsetTime: TimeInterval = 0
     
@@ -66,7 +72,7 @@ class DanmakuTextCellModel: DanmakuCellModel {
     
     func calculateSize() {
         size = NSString(string: text).boundingRect(with: CGSize(width: CGFloat(Float.infinity
-            ), height: 20), options: [.usesFontLeading, .usesLineFragmentOrigin], attributes: [.font: font], context: nil).size
+            ), height: CGFloat.greatestFiniteMagnitude), options: [.usesFontLeading, .usesLineFragmentOrigin], attributes: [.font: scaledFont], context: nil).size
     }
     
     func isEqual(to cellModel: DanmakuCellModel) -> Bool {
@@ -96,7 +102,7 @@ class DanmakuTextCell: DanmakuCell {
         context.setStrokeColor(UIColor.white.cgColor)
         context.saveGState()
         context.setTextDrawingMode(.stroke)
-        let attributes: [NSAttributedString.Key: Any] = [.font: model.font, .foregroundColor: UIColor.white]
+        let attributes: [NSAttributedString.Key: Any] = [.font: model.scaledFont, .foregroundColor: UIColor.white]
         text.draw(at: .zero, withAttributes: attributes)
         context.restoreGState()
         context.setTextDrawingMode(.fill)
@@ -138,6 +144,22 @@ danmakuView.pause()
 ```swift
 danmakuView.stop()
 ```
+
+### 统一缩放弹幕字号
+
+在主线程设置 `fontScale`，默认倍率为 `1`：
+
+```swift
+danmakuView.fontScale = 1.5
+// SwiftUI
+coordinator.fontScale = 1.5
+```
+
+文本模型遵循 `DanmakuFontScalable`，保存倍率并在变化时重新计算 `size`。测量和绘制统一使用 `scaledFont`（见上方示例），其字号为基础字体字号乘以倍率；模型原有 `font` 保持不变。16、20、24 号字在 1.5 倍时分别显示为 24、30、36 号字，恢复 1 倍后返回各自的基础字号。
+
+View 将倍率传给滚动、顶部和底部轨道，各轨道更新所属 cell 的尺寸和绘制，保留当前位置、剩余显示时间和暂停状态。后续 `canShoot`、`shoot`、`sync` 在轨道匹配前应用当前倍率；新建轨道和复用 cell 同样继承该值。未遵循此协议的图片、GIF 等模型保持原有尺寸。轨道间距由 `trackHeight` 单独控制。
+
+两个 Demo 都提供 `Font samples` 按钮，清屏、暂停并显示基础字号为 16、20、24 的三类弹幕。macOS 提供 0.5–2 倍滑杆；iOS 的 `Function demo` 提供 0.5、1、1.5、2 倍预设。切换倍率后点击 `play` 检查恢复播放。
 
 ### Gif弹幕
 

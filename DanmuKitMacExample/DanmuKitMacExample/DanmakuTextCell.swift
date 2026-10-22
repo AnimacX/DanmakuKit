@@ -32,7 +32,7 @@ public class DanmakuTextCell: DanmakuCell {
         let text = NSString(string: model.text)
 
         let attributes: [NSAttributedString.Key: Any] = [
-            .font: model.font,
+            .font: model.scaledFont,
             .foregroundColor: model.textColor
         ]
 
